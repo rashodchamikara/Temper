@@ -5,6 +5,7 @@ namespace App\Controllers;
 class ReadController{
 
     private $db_class;
+    public $duration;
 
     function __construct()
     {
@@ -14,6 +15,7 @@ class ReadController{
             //include the db class
         }
         
+        
     }
     // this function validate for valid file link or db connection 
     public function isValidConnection()
@@ -22,41 +24,59 @@ class ReadController{
         return $con_status;
     }
 
+    //using a getter and setter for future scalability 
+    public function setDuration($duration){
+        $this->duration = $duration;
+    }
+
+    public function getDuration(){
+        $duration = $this->duration;
+        return $duration;
+    }
+    public function getLineOutputs(){
+        $durations = $this->getDuration();
+        $this->db_class->setTimeDuration($durations);
+        $lines_array = $this->db_class->buildSlotsArray();
+        if(is_array($lines_array)){
+            $local__line_array = array();
+            foreach($lines_array as $data){
+                $plug_in_string = $data['start_date'];
+                if($data['end_date']!=''){
+                    $plug_in_string .= " - ".$data['end_date'];
+                }
+                $local__line_array[]  = $plug_in_string;
+                unset($plug_in_string);
+            }
+            //return  $lines_array['2016-07-19']['start_date'];
+            return $local__line_array;
+        }else{
+            //somethings wrong with the duration or csv file we use this return to expose error 
+            return false;
+        }
+        
+    }
+
     //final exporting function to build the string for API call 
     public function getFInalDataArray(){
+        $durations = $this->getDuration();
+        $this->db_class->setTimeDuration($durations);
         $data_set = $this->db_class->exportDataToOutput();
-        $return_str = '';
-        $main_count = count($data_set);
-        $y=1;
+        $output_data = array();
+        $x=1;
+        //var_dump($data_set);
         foreach($data_set as $data){
-            $return_str .= "{";
-                $return_str .= "name: '".$data['start_date']."-".$data['end_date']."',";
-                $return_str .= "data: ";
-                $return_str .= "[";
-                $mini_count = count($data['data']);
-                $x=1;
-                
-                foreach($data['data'] as $key => $value){
-                    if($key==0){
-                        $return_str .= 100;
-                    }else{
-                        $return_str .= $value;
-                    }
-                    
-                    if($x!=$mini_count){
-                        $return_str .= ",";
-                    }
-                    $x++;
-                }
-            $return_str .= "]";
-            $return_str .= "}";
-            if($y!=$main_count){
-                $return_str .= ",";
+            $output_data[$x] = array();
+            $build_title = $data['start_date'];
+            if($data['end_date']!=''){
+                $build_title .= "-".$data['end_date'];
             }
-        $y++;
+            $output_data[$x]['title'] = $build_title;
+            $output_data[$x]['data'] = $data['data'];
+
+            $x++;
         }
 
-        return $return_str;
+        return $output_data;
     }
 }
 

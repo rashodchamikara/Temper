@@ -1,7 +1,39 @@
 <?PHP 
-$actual_link = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]/app/";
+$actual_link = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]/app/?action=GetData&duration=WEEK";
 $response = file_get_contents($actual_link);
+$decode = json_decode($response,true);
+//var_dump($decode['data']);
+$x=1;
+$count = count($decode['data']);
+$print_output = "";
+foreach($decode['data'] as $data){
+    $print_output .= "{";
+    $print_output .= "name : '".$data['title']."',";
+    $print_output .= "data: [";
 
+    $data_count = count($data['data']);
+    $y=1;
+    foreach($data['data'] as $key => $value){
+        if($key==0){
+            $print_output .= 100; 
+        }else{
+            $print_output .= $value;
+        }
+        
+        if($y!=$data_count){
+            $print_output .= ",";
+        }
+        $y++;
+    }
+
+    $print_output .= "]";
+    $print_output .= "}";
+    if($count!=$x){
+        $print_output .= ",";
+    }
+
+    $x++;
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -108,9 +140,7 @@ $response = file_get_contents($actual_link);
                 },
                 type: 'bellcurve',
                 series: [
-                    <?PHP echo $response;?>],
-
-
+                    <?PHP echo $print_output;?>],
 
                 responsive: {
                     rules: [{
